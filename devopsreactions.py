@@ -72,7 +72,8 @@ def load_images_threadpool(data):
 def load_images_processpool(data):
     with concurrent.futures.ProcessPoolExecutor(max_workers=5) as executor:
         future_to_url = {executor.submit(load_url, url): name
-                         for (name, url) in data.items()}
+                         for (name, url) in data.items()
+                         if not os.path.exists(os.path.join(directory, name) + '.gif')}
         for future in concurrent.futures.as_completed(future_to_url):
             name = future_to_url[future]
             try:
