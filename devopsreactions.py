@@ -1,12 +1,15 @@
 import asyncio
 import aiohttp
 import concurrent
+import os.path
 
 from lxml.html import fromstring
 from urllib.request import urlopen
 
 loop = asyncio.get_event_loop()
 
+
+directory = 'pics'
 
 def get_urls():
     content = urlopen('http://devopsreactions.tumblr.com/').read()
@@ -24,11 +27,16 @@ def get_urls():
     return data
 
 
+def save_img(name, img):
+    print(os.path.join(directory, name) + '.gif')
+    with open(os.path.join(directory, name) + '.gif', 'wb') as f:
+        f.write(img)
+
+
 # 0.596u 0.496s 0:38.09 2.8%      0+0k 1128+50104io 11pf+0w
 def load_images(data):
     for (name, url) in data.items():
-        with open(name + '.gif', 'wb') as f:
-            f.write(urlopen(url).read())
+        save_img(name, urlopen(url).read())
 
 
 #
@@ -36,8 +44,7 @@ def load_images_asyncio(data):
     for (name, url) in data.items():
         response = yield from aiohttp.request('GET', url)
         img = yield from response.read()
-        with open(name + '.gif', 'wb') as f:
-            f.write(img)
+        save_img(name, img)
 
 
 def load_url(url):
@@ -51,14 +58,14 @@ def load_images_threadpool(data):
         future_to_url = {executor.submit(load_url, url): name
                          for (name, url) in data.items()}
         for future in concurrent.futures.as_completed(future_to_url):
+            print(name)
             name = future_to_url[future]
             try:
                 img = future.result()
             except Exception as e:
                 print(e)
             else:
-                with open(name + '.gif', 'wb') as f:
-                    f.write(img)
+                save_img(name, img)
 
 
 # 0.616u 0.636s 0:27.95 4.4%      0+0k 472+50104io 3pf+0w
@@ -73,8 +80,7 @@ def load_images_processpool(data):
             except Exception as e:
                 print(e)
             else:
-                with open(name + '.gif', 'wb') as f:
-                    f.write(img)
+                save_img(name, img)
 
 
 if __name__ == '__main__':
